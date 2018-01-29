@@ -1,19 +1,21 @@
-/// Provides a direct access to the Hd44780.
+/// Provides a 'direct' access to the HD44780.
+/// (`direct` in the meaning of `less abstracted than the buffered one`).
 ///
 /// # Example
 ///
 /// ```rust
-/// let mut lcd_dev = LinuxI2CDevice::new("/dev/i2c-1", 0x27).unwrap();
-/// let mut lcd_interface = hd44780::interface::i2c::I2CInterface::new(&mut lcd_dev);
-/// let mut lcd = hd44780::DirectHd44780::new(&mut lcd_interface);
+/// let mut lcd_device = LinuxI2CDevice::new("/dev/i2c-1", 0x27).unwrap();
+/// let mut lcd_interface = pwr_hd44780::interface::I2C::new(&mut lcd_device);
+/// let mut lcd = pwr_hd44780::frontend::Direct::new(&mut lcd_interface);
 ///
+/// lcd.clear();
 /// lcd.print("Hello World! :-)");
 /// ```
 ///
 /// # Caveats
 ///
-/// The `clear` and `home` methods are slow (Hd44780 requires an additional delay to process them).
-/// If performance is a concern, please consider using the buffered frontend.
+/// 1. The `clear` and `home` methods are slow (HD44780 requires an additional delay to process
+///    them). If performance is a concern, please consider using the buffered frontend.
 
 use super::super::*;
 use super::super::interface::command::*;
@@ -32,7 +34,7 @@ struct State {
 }
 
 impl<'a> Direct<'a> {
-    /// Creates a new raw Hd44780 instance on given interface.
+    /// Creates a new raw HD44780 instance on given interface.
     pub fn new(interface: &'a mut Interface, properties: Properties) -> Direct<'a> {
         let mut lcd = Direct {
             interface,
@@ -97,7 +99,7 @@ impl<'a> Hd44780 for Direct<'a> {
     }
 
     /// Moves cursor at (0, 0).
-    /// It's actually slower than "move_at(0, 0)", because Hd44780 takes some time to process this
+    /// It's actually slower than "move_at(0, 0)", because HD44780 takes some time to process this
     /// one.
     fn home(&mut self) {
         self.interface.execute(Command::Home {});

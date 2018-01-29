@@ -1,4 +1,4 @@
-/// A convenient, high-level driver for the Hd44780 display.
+/// A convenient, high-level driver for the HD44780 display.
 /// Supports both the `I2C` and `GPIO` interfaces + has a buffered implementation.
 ///
 /// # Example
@@ -11,10 +11,13 @@
 /// lcd.print("Hello World! :-)");
 /// ```
 ///
-/// # Copyright
-/// 2018 by Patryk Wychowaniec, MIT.
+/// # License
+///
+/// Copyright (c) 2018, Patryk Wychowaniec <wychowaniec.patryk@gmail.com>.
+/// Licensed under the MIT license.
 
 extern crate i2cdev;
+extern crate rppal;
 
 pub mod frontend;
 pub mod interface;
@@ -53,14 +56,14 @@ pub trait Hd44780 {
     /// important - rest is ignored.
     ///
     /// `idx` must be from range `<0, 7>` (that is: only 8 custom characters are possible, that's a
-    /// limit imposed by the designers of the Hd44780).
+    /// limit imposed by the designers of the HD44780).
     ///
     /// When passed an invalid `idx`, does nothing.
     ///
     /// # Example
     ///
     /// ```rust
-    /// lcd.set_char(0, [
+    /// lcd.set_char(1, [
     ///   0b00000000,
     ///   0b10000000,
     ///   0b01000000,
@@ -71,7 +74,7 @@ pub trait Hd44780 {
     ///   0b00000010,
     /// ]);
     ///
-    /// lcd.print(String::from("\x00"));
+    /// lcd.print(String::from("\x01"));
     /// ```
     fn set_char(&mut self, idx: u8, lines: [u8; 8]);
 

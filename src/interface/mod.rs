@@ -1,7 +1,9 @@
 pub(crate) mod command;
-pub(crate) mod i2c;
+pub mod i2c;
+pub mod gpio4;
 
 pub use self::i2c::I2C;
+pub use self::gpio4::Gpio4;
 
 use self::command::*;
 use std::{thread, time};

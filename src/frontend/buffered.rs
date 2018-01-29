@@ -1,15 +1,15 @@
-/// Provides a buffered access to the Hd44780.
+/// Provides a buffered access to the HD44780.
 ///
-/// Can be used like a regular Hd44780, except that one must manually call the `render` method at
+/// Can be used like a regular HD44780, except that one must manually call the `render` method at
 /// some point.
 ///
 /// # Example
-
+///
 /// ```rust
-/// let mut lcd_dev = LinuxI2CDevice::new("/dev/i2c-1", 0x27).unwrap();
-/// let mut lcd_interface = hd44780::interface::i2c::I2CInterface::new(&mut lcd_dev);
-/// let mut lcd_direct = hd44780::DirectHd44780::new(&mut lcd_interface);
-/// let mut lcd = hd44780::BufferedHd44780::new(&mut lcd_direct);
+/// let mut lcd_device = LinuxI2CDevice::new("/dev/i2c-1", 0x27).unwrap();
+/// let mut lcd_interface = pwr_hd44780::interface::I2C::new(&mut lcd_device);
+/// let mut direct_lcd = pwr_hd44780::frontend::Direct::new(&mut lcd_interface);
+/// let mut lcd = pwr_hd44780::frontend::Buffered::new(&mut direct_lcd);
 ///
 /// lcd.print("Hello World! :-)");
 /// lcd.render();
@@ -17,18 +17,18 @@
 ///
 /// # New methods
 ///
-/// The buffered frontend provides this new methods:
+/// This frontend provides some new methods, which are not present in the direct one - namely:
 /// - `render`,
 /// - `println`.
 ///
 /// # Caveats
 ///
 /// 1. Although rendering the text requires a call to the `render` method, modifying the LCD's state
-/// does not. Thus calling eg. the `set_backlight` method works instantly (does not require calling
-/// `render`) and it's entirely by the design.
+///    does not. Thus calling eg. the `set_backlight` method results in an instant change. Same
+///    applies to `set_char` and a few other ones.
 ///
-/// 2. `set_cursor_blinking` / `set_cursor_visible` do not play well with buffering and thus are
-/// discouraged.
+/// 2. `set_cursor_blinking` / `set_cursor_visible` do not play well with buffering and thus their
+///    usage is discouraged.
 
 use super::super::Hd44780;
 use super::Direct;
@@ -52,7 +52,7 @@ struct Buffer {
 }
 
 impl<'a> Buffered<'a> {
-    /// Creates a new buffered Hd44780 basing on previously existing direct one.
+    /// Creates a new buffered HD44780 basing on previously existing direct one.
     pub fn new(lcd: &'a mut Direct<'a>) -> Buffered<'a> {
         let (width, height) = (lcd.get_width(), lcd.get_height());
 
