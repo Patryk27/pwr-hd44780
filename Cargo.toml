@@ -7,7 +7,7 @@ license = "MIT"
 
 description = "A driver for the HD44780 LCD. Has support for both I2C and GPIO buses + implements a high-speed buffered version."
 
-repository = "https://github.com/Patryk27/pwr-hd4780"
+repository = "https://github.com/Patryk27/pwr-hd44780"
 maintenance = { status = "experimental" }
 
 [dependencies]
