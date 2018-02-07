@@ -16,8 +16,8 @@
 /// Copyright (c) 2018, Patryk Wychowaniec <wychowaniec.patryk@gmail.com>.
 /// Licensed under the MIT license.
 
-extern crate i2cdev;
-extern crate rppal;
+pub extern crate i2cdev;
+pub extern crate rppal;
 
 pub mod frontend;
 pub mod interface;
