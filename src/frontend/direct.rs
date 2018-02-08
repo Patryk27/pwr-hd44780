@@ -22,8 +22,22 @@ struct State {
 }
 
 impl<'a> Direct<'a> {
-    /// Creates a new raw HD44780 instance on given interface.
-    pub fn new(interface: &'a mut Interface, properties: Properties) -> Direct<'a> {
+    /// Creates a new direct HD44780 on given interface.
+    pub fn new(interface: &'a mut Interface, width: usize, height: usize) -> Direct<'a> {
+        Direct::new_ex(
+            interface,
+
+            Properties {
+                width,
+                height,
+
+                font: if height == 1 { Font::Font5x10 } else { Font::Font5x8 },
+            }
+        )
+    }
+
+    /// Creates a new direct HD44780 on given interface.
+    pub fn new_ex(interface: &'a mut Interface, properties: Properties) -> Direct<'a> {
         let mut lcd = Direct {
             interface,
             properties,

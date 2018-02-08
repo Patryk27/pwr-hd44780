@@ -26,15 +26,11 @@ fn main() {
         },
     );
 
-    // create the LCD's frontend
+    // create the LCD's frontend;
+    // use interface created before and assume LCD's width x height = 20 x 4
     let mut lcd = pwr_hd44780::frontend::Direct::new(
         &mut lcd_interface,
-
-        pwr_hd44780::Properties {
-            width: 16,
-            height: 2,
-            font: pwr_hd44780::Font::Font5x8,
-        }
+        20, 4
     );
 
     // finally - print our text
