@@ -1,6 +1,6 @@
 [package]
 name = "pwr-hd44780"
-version = "0.0.3"
+version = "0.0.4"
 
 authors = ["Patryk Wychowaniec <wychowaniec.patryk@gmail.com>"]
 license = "MIT"
