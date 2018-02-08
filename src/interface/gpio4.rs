@@ -7,72 +7,16 @@
 ///     <https://github.com/golemparts/rppal>, for providing a nice crate allowing to control the
 ///     GPIOs.
 ///
-/// # Example
-///
-/// Wiring used in the example:
-///     D4 - 26
-///     D5 - 6
-///     D6 - 5
-///     D7 - 16
-///     RS - 23
-///     EN - 24
-///
-///     RW - pulled down
-///
-/// BCM pin numbering is user (as it is natively in the rppal crate).
-///
-/// ```rust
-/// let mut gpio = Gpio::new().unwrap();
-///
-/// // initialize the GPIOs
-/// for pin in [26, 6, 5, 16, 23, 24].iter() {
-///     gpio.set_mode(*pin, Mode::Output);
-/// }
-///
-/// // create the LCD's interface
-/// let mut lcd_interface = pwr_hd44780::interface::Gpio4::new(
-///     &gpio,
-///
-///     pwr_hd44780::interface::gpio4::Pins {
-///         data: [26, 6, 5, 16],
-///         rs: 23,
-///         en: 24,
-///     },
-/// );
-///
-/// // create the LCD's frontend
-/// let mut lcd = pwr_hd44780::frontend::Direct::new(
-///     &mut lcd_interface,
-///
-///     pwr_hd44780::Properties {
-///         width: 16,
-///         height: 2,
-///         font: pwr_hd44780::Font::Font5x8,
-///     }
-/// );
-///
-/// // finally - print our text
-/// lcd.clear();
-/// lcd.print(String::from("Hello World! :-)"));
-/// ```
-///
 /// # Caveats
 ///
 /// 1. No backlight support yet.
-///
-/// # Q&A
-///
-/// Q1. Why aren't the GPIOs' directions set automatically?
-///
-/// A1. `gpio.set_mode` would require my library to mutably borrow the `gpio` reference, effectively
-///     making it unusable anywhere later in the code.
 
-use rppal::gpio::{Gpio, Level};
+use rppal::gpio::{Gpio, Level, Mode};
 use std::{thread, time};
 use super::super::interface::Interface;
 
-pub struct Gpio4<'a> {
-    gpio: &'a Gpio,
+pub struct Gpio4 {
+    gpio: Gpio,
     pins: Pins,
 }
 
@@ -87,9 +31,18 @@ pub struct Pins {
     pub en: u8,
 }
 
-impl<'a> Gpio4<'a> {
+impl Gpio4 {
     /// Constructs a new HD44780 GPIO interface with 4-bit communication bus.
-    pub fn new(gpio: &'a Gpio, pins: Pins) -> Gpio4<'a> {
+    pub fn new(pins: Pins) -> Gpio4 {
+        let mut gpio = Gpio::new().unwrap();
+
+        gpio.set_mode(pins.data[0], Mode::Output);
+        gpio.set_mode(pins.data[1], Mode::Output);
+        gpio.set_mode(pins.data[2], Mode::Output);
+        gpio.set_mode(pins.data[3], Mode::Output);
+        gpio.set_mode(pins.rs, Mode::Output);
+        gpio.set_mode(pins.en, Mode::Output);
+
         Gpio4 {
             gpio,
             pins,
@@ -123,7 +76,7 @@ impl<'a> Gpio4<'a> {
     }
 }
 
-impl<'a> Interface for Gpio4<'a> {
+impl Interface for Gpio4 {
     fn initialize(&mut self) {
         // initialize the screen
         let commands = vec![

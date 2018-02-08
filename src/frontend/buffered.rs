@@ -1,21 +1,9 @@
 /// Provides a buffered access to the HD44780.
 ///
 /// Can be used like a regular HD44780, except that one must manually call the `render` method at
-/// some point.
+/// some point to actually refresh the screen.
 ///
-/// # Example
-///
-/// ```rust
-/// let mut lcd_device = LinuxI2CDevice::new("/dev/i2c-1", 0x27).unwrap();
-/// let mut lcd_interface = pwr_hd44780::interface::I2C::new(&mut lcd_device);
-/// let mut direct_lcd = pwr_hd44780::frontend::Direct::new(&mut lcd_interface);
-/// let mut lcd = pwr_hd44780::frontend::Buffered::new(&mut direct_lcd);
-///
-/// lcd.print("Hello World! :-)");
-/// lcd.render();
-/// ```
-///
-/// # New methods
+/// # Additional methods
 ///
 /// This frontend provides some new methods, which are not present in the direct one - namely:
 /// - `render`,
@@ -27,7 +15,7 @@
 ///    does not. Thus calling eg. the `set_backlight` method results in an instant change. Same
 ///    applies to `set_char` and a few other ones.
 ///
-/// 2. `set_cursor_blinking` / `set_cursor_visible` do not play well with buffering and thus their
+/// 2. `set_cursor_blinking` & `set_cursor_visible` do not play well with buffering and thus their
 ///    usage is discouraged.
 
 use super::super::Hd44780;

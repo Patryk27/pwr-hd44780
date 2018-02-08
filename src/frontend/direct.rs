@@ -1,16 +1,4 @@
-/// Provides a 'direct' access to the HD44780.
-/// (`direct` in the meaning of `less abstracted than the buffered one`).
-///
-/// # Example
-///
-/// ```rust
-/// let mut lcd_device = LinuxI2CDevice::new("/dev/i2c-1", 0x27).unwrap();
-/// let mut lcd_interface = pwr_hd44780::interface::I2C::new(&mut lcd_device);
-/// let mut lcd = pwr_hd44780::frontend::Direct::new(&mut lcd_interface);
-///
-/// lcd.clear();
-/// lcd.print("Hello World! :-)");
-/// ```
+/// Provides a direct access to the HD44780.
 ///
 /// # Caveats
 ///
@@ -156,11 +144,11 @@ impl<'a> Hd44780 for Direct<'a> {
         }
     }
 
-    fn get_width(&mut self) -> usize {
-        return self.properties.width;
+    fn get_height(&mut self) -> usize {
+        self.properties.height
     }
 
-    fn get_height(&mut self) -> usize {
-        return self.properties.height;
+    fn get_width(&mut self) -> usize {
+        self.properties.width
     }
 }

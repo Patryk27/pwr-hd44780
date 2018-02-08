@@ -1,4 +1,5 @@
 pub(crate) mod command;
+
 pub mod i2c;
 pub mod gpio4;
 

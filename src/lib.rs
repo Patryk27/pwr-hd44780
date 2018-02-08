@@ -1,23 +1,13 @@
 /// A convenient, high-level driver for the HD44780 display.
 /// Supports both the `I2C` and `GPIO` interfaces + has a buffered implementation.
 ///
-/// # Example
-///
-/// ```rust
-/// let mut lcd_dev = LinuxI2CDevice::new("/dev/i2c-1", 0x27).unwrap();
-/// let mut lcd_interface = hd44780::interface::i2c::I2CInterface::new(&mut lcd_dev);
-/// let mut lcd = hd44780::DirectHd44780::new(&mut lcd_interface);
-///
-/// lcd.print("Hello World! :-)");
-/// ```
-///
 /// # License
 ///
 /// Copyright (c) 2018, Patryk Wychowaniec <wychowaniec.patryk@gmail.com>.
 /// Licensed under the MIT license.
 
-pub extern crate i2cdev;
-pub extern crate rppal;
+extern crate i2cdev;
+extern crate rppal;
 
 pub mod frontend;
 pub mod interface;
@@ -78,11 +68,11 @@ pub trait Hd44780 {
     /// ```
     fn set_char(&mut self, idx: u8, lines: [u8; 8]);
 
-    /// Returns screen's width (number of characters per line).
-    fn get_width(&mut self) -> usize;
-
     /// Returns screen's height (number of lines).
     fn get_height(&mut self) -> usize;
+
+    /// Returns screen's width (number of characters per line).
+    fn get_width(&mut self) -> usize;
 }
 
 #[derive(Copy, Clone, PartialEq)]

@@ -13,23 +13,12 @@
 /// BCM pin numbering is user (as it is natively in the rppal crate).
 
 extern crate pwr_hd44780;
-extern crate rppal;
 
 use pwr_hd44780::Hd44780;
-use rppal::gpio::{Gpio, Mode};
 
 fn main() {
-    let mut gpio = Gpio::new().unwrap();
-
-    // initialize the GPIOs
-    for pin in [26, 6, 5, 16, 23, 24].iter() {
-        gpio.set_mode(*pin, Mode::Output);
-    }
-
     // create the LCD's interface
     let mut lcd_interface = pwr_hd44780::interface::Gpio4::new(
-        &gpio,
-
         pwr_hd44780::interface::gpio4::Pins {
             data: [26, 6, 5, 16],
             rs: 23,

@@ -7,34 +7,6 @@
 ///     <https://github.com/rust-embedded/rust-i2cdev> for providing a nice crate allowing to
 ///     control the I2C.
 ///
-/// # Example
-///
-/// Example assumes your HD44780 is located at the 0x27 address - you can of course change it as
-/// you wish.
-///
-/// ```rust
-/// // create the I2C device
-/// let mut lcd_device = LinuxI2CDevice::new("/dev/i2c-1", 0x27).unwrap();
-///
-/// // create the LCD's interface
-/// let mut lcd_interface = pwr_hd44780::interface::I2C::new(&mut lcd_device);
-///
-/// // create the LCD's frontend
-/// let mut lcd = pwr_hd44780::frontend::Direct::new(
-///     &mut lcd_interface,
-///
-///     pwr_hd44780::Properties {
-///         width: 20,
-///         height: 4,
-///         font: pwr_hd44780::Font::Font5x8,
-///     }
-/// );
-///
-/// // finally - print our text
-/// lcd.clear();
-/// lcd.print(String::from("Hello World! :-)"));
-/// ```
-///
 /// # A word on the protocol itself
 ///
 /// The PCF8574 family (to which this driver's been written) allows us to send only a nibble
@@ -51,19 +23,19 @@
 
 use i2cdev::core::I2CDevice;
 use i2cdev::linux::LinuxI2CDevice;
-use std::{thread, time};
+use std::{path, thread, time};
 use super::super::interface::Interface;
 
-pub struct I2C<'a> {
-    dev: &'a mut LinuxI2CDevice,
+pub struct I2C {
+    dev: LinuxI2CDevice,
     backlight_enabled: bool,
 }
 
-impl<'a> I2C<'a> {
+impl I2C {
     /// Constructs a new HD44780 I2C interface.
-    pub fn new(dev: &'a mut LinuxI2CDevice) -> I2C<'a> {
+    pub fn new<P: AsRef<path::Path>>(i2c_device: P, i2c_address: u16) -> I2C {
         I2C {
-            dev,
+            dev: LinuxI2CDevice::new(i2c_device, i2c_address).unwrap(),
             backlight_enabled: true,
         }
     }
@@ -80,7 +52,7 @@ impl<'a> I2C<'a> {
     }
 }
 
-impl<'a> Interface for I2C<'a> {
+impl Interface for I2C {
     fn initialize(&mut self) {
         let commands = vec![
             // try to put LCD in 8-bit mode three times;
