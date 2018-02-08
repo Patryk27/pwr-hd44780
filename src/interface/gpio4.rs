@@ -147,7 +147,7 @@ impl<'a> Interface for Gpio4<'a> {
         4
     }
 
-    fn set_backlight(&mut self, enabled: bool) {
+    fn set_backlight(&mut self, _enabled: bool) {
         // @todo
     }
 
