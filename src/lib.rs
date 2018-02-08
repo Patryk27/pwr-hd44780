@@ -23,8 +23,15 @@ pub trait Hd44780 {
     /// When passed an invalid coordinates (eg. beyond the screen), does nothing.
     fn move_at(&mut self, y: usize, x: usize);
 
-    /// Prints text at current cursor's position.
-    fn print(&mut self, str: String);
+    /// Prints a single ASCII character and moves cursor.
+    fn print_char(&mut self, ch: u8);
+
+    /// Prints a string at current cursor's position.
+    fn print<T: Into<String>>(&mut self, str: T) {
+        for ch in str.into().chars() {
+            self.print_char(ch as u8);
+        }
+    }
 
     /// Enables / disables the backlight.
     fn set_backlight(&mut self, enabled: bool);

@@ -39,5 +39,5 @@ fn main() {
 
     // finally - print our text
     lcd.clear();
-    lcd.print(String::from("Hello World! :-)"));
+    lcd.print("Hello World! :-)");
 }

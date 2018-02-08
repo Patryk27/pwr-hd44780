@@ -105,10 +105,8 @@ impl<'a> Hd44780 for Direct<'a> {
         });
     }
 
-    fn print(&mut self, str: String) {
-        for ch in str.chars() {
-            self.interface.write_data(ch as u8);
-        }
+    fn print_char(&mut self, ch: u8) {
+        self.interface.write_data(ch);
     }
 
     fn set_backlight(&mut self, enabled: bool) {

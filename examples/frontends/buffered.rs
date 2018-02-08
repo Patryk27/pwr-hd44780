@@ -22,7 +22,7 @@ fn main() {
     // finally - print our text
     loop {
         lcd.clear();
-        lcd.print(String::from("Hello World! :-)"));
+        lcd.print("Hello World! :-)");
         lcd.render();
     }
 }

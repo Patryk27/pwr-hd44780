@@ -76,29 +76,11 @@ impl<'a> Buffered<'a> {
     }
 
     /// Prints text at current cursor's position and moves to the next line.
-    pub fn println(&mut self, str: String) {
+    pub fn println<T: Into<String>>(&mut self, str: T) {
         self.print(str);
 
         self.cursor.x = 0;
         self.cursor.y += 1;
-    }
-
-    /// Prints a single character.
-    fn print_char(&mut self, ch: u8) {
-        if self.cursor.y >= self.buffer.height || self.cursor.x >= self.buffer.width {
-            return;
-        }
-
-        // print the character
-        self.buffer.lines[self.cursor.y][self.cursor.x] = ch;
-
-        // move the cursor
-        self.cursor.x += 1;
-
-        if self.cursor.x >= self.buffer.width {
-            self.cursor.x = 0;
-            self.cursor.y += 1;
-        }
     }
 }
 
@@ -126,9 +108,20 @@ impl<'a> Hd44780 for Buffered<'a> {
         self.cursor.x = x;
     }
 
-    fn print(&mut self, str: String) {
-        for ch in str.chars() {
-            self.print_char(ch as u8);
+    fn print_char(&mut self, ch: u8) {
+        if self.cursor.y >= self.buffer.height || self.cursor.x >= self.buffer.width {
+            return;
+        }
+
+        // print the character
+        self.buffer.lines[self.cursor.y][self.cursor.x] = ch;
+
+        // move the cursor
+        self.cursor.x += 1;
+
+        if self.cursor.x >= self.buffer.width {
+            self.cursor.x = 0;
+            self.cursor.y += 1;
         }
     }
 
