@@ -1,4 +1,4 @@
-/// Defines an interface for controlling the HD44780 via a 4-bit GPIO bus.
+/// Defines an interface (a bus) for controlling the HD44780 via a 4-bit GPIO.
 ///
 /// Inspired by:
 ///     <https://github.com/arduino-libraries/LiquidCrystal/blob/master/src/LiquidCrystal.cpp>.
@@ -13,7 +13,7 @@
 
 use rppal::gpio::{Gpio, Level, Mode};
 use std::{thread, time};
-use super::super::interface::Interface;
+use super::super::{Bus, Result, UnitResult};
 
 pub struct Gpio4 {
     gpio: Gpio,
@@ -32,25 +32,28 @@ pub struct Pins {
 }
 
 impl Gpio4 {
-    /// Constructs a new HD44780 GPIO interface with 4-bit communication bus.
-    pub fn new(pins: Pins) -> Gpio4 {
+    /// Constructs a new HD44780 GPIO bus.
+    pub fn new(pins: Pins) -> Result<Gpio4> {
         let mut gpio = Gpio::new().unwrap();
 
         gpio.set_mode(pins.data[0], Mode::Output);
         gpio.set_mode(pins.data[1], Mode::Output);
         gpio.set_mode(pins.data[2], Mode::Output);
         gpio.set_mode(pins.data[3], Mode::Output);
+
         gpio.set_mode(pins.rs, Mode::Output);
         gpio.set_mode(pins.en, Mode::Output);
 
-        Gpio4 {
-            gpio,
-            pins,
-        }
+        Ok(
+            Gpio4 {
+                gpio,
+                pins,
+            }
+        )
     }
 
     /// Sends a single nibble, latching the `Enable` pin.
-    fn write_nibble(&mut self, value: u8, as_data: bool) {
+    fn write_nibble(&mut self, value: u8, as_data: bool) -> UnitResult {
         let write_pin = |pin: u8, enabled: bool| {
             self.gpio.write(pin, if enabled { Level::High } else { Level::Low });
         };
@@ -73,11 +76,13 @@ impl Gpio4 {
         // pull down the `enable` pin & wait ~37us (commands need 37us to settle)
         write_pin(self.pins.en, false);
         thread::sleep(time::Duration::new(0, 37 * 1000));
+
+        Ok(())
     }
 }
 
-impl Interface for Gpio4 {
-    fn initialize(&mut self) {
+impl Bus for Gpio4 {
+    fn initialize(&mut self) -> UnitResult {
         // initialize the screen
         let commands = vec![
             // try to put LCD in 8-bit mode three times;
@@ -91,21 +96,25 @@ impl Interface for Gpio4 {
         ];
 
         for c in commands {
-            self.write_nibble(c << 4, false);
+            self.write_nibble(c << 4, false)?;
             thread::sleep(time::Duration::new(0, 100 * 1000));
         }
+
+        Ok(())
     }
 
-    fn get_bus_width(&mut self) -> usize {
+    fn set_backlight(&mut self, _enabled: bool) -> UnitResult {
+        Ok(()) // @todo
+    }
+
+    fn write_byte(&mut self, value: u8, as_data: bool) -> UnitResult {
+        self.write_nibble(value << 0, as_data)?;
+        self.write_nibble(value << 4, as_data)?;
+
+        Ok(())
+    }
+
+    fn width(&self) -> usize {
         4
-    }
-
-    fn set_backlight(&mut self, _enabled: bool) {
-        // @todo
-    }
-
-    fn write_byte(&mut self, value: u8, as_data: bool) {
-        self.write_nibble(value << 0, as_data);
-        self.write_nibble(value << 4, as_data);
     }
 }

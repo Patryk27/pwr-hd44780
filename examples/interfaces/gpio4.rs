@@ -17,23 +17,29 @@ extern crate pwr_hd44780;
 use pwr_hd44780::Hd44780;
 
 fn main() {
-    // create the LCD's interface
-    let mut lcd_interface = pwr_hd44780::interface::Gpio4::new(
-        pwr_hd44780::interface::gpio4::Pins {
+    run().unwrap();
+}
+
+fn run() -> Result<(), Box<std::error::Error>> {
+    // create the LCD's bus instance
+    let mut lcd_bus = pwr_hd44780::Gpio4Bus::new(
+        pwr_hd44780::buses::gpio4::Pins {
             data: [26, 6, 5, 16],
             rs: 23,
             en: 24,
         },
-    );
+    )?;
 
-    // create the LCD's frontend;
-    // use interface created before and assume LCD's width x height = 20 x 4
-    let mut lcd = pwr_hd44780::frontend::Direct::new(
-        &mut lcd_interface,
-        20, 4
-    );
+    // create the direct LCD's instance;
+    // use bus created before and assume LCD's width x height = 20 x 4
+    let mut lcd = pwr_hd44780::DirectLcd::new(
+        &mut lcd_bus,
+        20, 4,
+    )?;
 
     // finally - print our text
-    lcd.clear();
-    lcd.print("Hello World! :-)");
+    lcd.clear()?;
+    lcd.print("Hello World! :-)")?;
+
+    Ok(())
 }

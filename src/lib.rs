@@ -1,5 +1,5 @@
 /// A convenient, high-level driver for the HD44780 display.
-/// Supports both the `I2C` and `GPIO` interfaces + has a buffered implementation.
+/// Supports both the `I2C` and `GPIO` buses + has a buffered implementation.
 ///
 /// # License
 ///
@@ -9,43 +9,54 @@
 extern crate i2cdev;
 extern crate rppal;
 
-pub mod frontend;
-pub mod interface;
+pub(crate) use buses::Bus;
+pub use buses::Gpio4 as Gpio4Bus;
+pub use buses::I2C as I2CBus;
+pub use frontends::Buffered as BufferedLcd;
+pub use frontends::Direct as DirectLcd;
+
+pub mod buses;
+pub mod frontends;
+
+pub type Result<T> = ::std::result::Result<T, Box<std::error::Error>>;
+pub type UnitResult = Result<()>;
 
 pub trait Hd44780 {
     /// Clears the screen and moves cursor at (0, 0).
-    fn clear(&mut self);
+    fn clear(&mut self) -> UnitResult;
 
     /// Moves the cursor at (0, 0).
-    fn home(&mut self);
+    fn home(&mut self) -> UnitResult;
 
     /// Moves the cursor at given position.
     /// When passed an invalid coordinates (eg. beyond the screen), does nothing.
-    fn move_at(&mut self, y: usize, x: usize);
+    fn move_at(&mut self, y: usize, x: usize) -> UnitResult;
 
     /// Prints a single ASCII character and moves cursor.
-    fn print_char(&mut self, ch: u8);
+    fn print_char(&mut self, ch: u8) -> UnitResult;
 
     /// Prints a string at current cursor's position.
-    fn print<T: Into<String>>(&mut self, str: T) {
+    fn print<T: Into<String>>(&mut self, str: T) -> UnitResult {
         for ch in str.into().chars() {
-            self.print_char(ch as u8);
+            self.print_char(ch as u8)?;
         }
+
+        Ok(())
     }
 
     /// Enables / disables the backlight.
-    fn set_backlight(&mut self, enabled: bool);
+    fn set_backlight(&mut self, enabled: bool) -> UnitResult;
 
     /// Enables / disables blinking the cursor.
     /// Blinking = whole 5x8 / 5x10 character is blinking,
-    fn set_cursor_blinking(&mut self, enabled: bool);
+    fn set_cursor_blinking(&mut self, enabled: bool) -> UnitResult;
 
     /// Enables / disables the cursor.
     /// Visible = only bottom of the character is blinking.
-    fn set_cursor_visible(&mut self, enabled: bool);
+    fn set_cursor_visible(&mut self, enabled: bool) -> UnitResult;
 
     /// Shows / hides the text.
-    fn set_text_visible(&mut self, enabled: bool);
+    fn set_text_visible(&mut self, enabled: bool) -> UnitResult;
 
     /// Creates a custom character from given bitmap.
     ///
@@ -60,7 +71,7 @@ pub trait Hd44780 {
     /// # Example
     ///
     /// ```rust
-    /// lcd.set_char(1, [
+    /// lcd.create_char(1, [
     ///   0b00000000,
     ///   0b10000000,
     ///   0b01000000,
@@ -71,15 +82,15 @@ pub trait Hd44780 {
     ///   0b00000010,
     /// ]);
     ///
-    /// lcd.print(String::from("\x01"));
+    /// lcd.print_char(1);
     /// ```
-    fn set_char(&mut self, idx: u8, lines: [u8; 8]);
+    fn create_char(&mut self, idx: u8, lines: [u8; 8]) -> UnitResult;
 
     /// Returns screen's height (number of lines).
-    fn get_height(&mut self) -> usize;
+    fn height(&mut self) -> usize;
 
     /// Returns screen's width (number of characters per line).
-    fn get_width(&mut self) -> usize;
+    fn width(&mut self) -> usize;
 }
 
 #[derive(Copy, Clone, PartialEq)]

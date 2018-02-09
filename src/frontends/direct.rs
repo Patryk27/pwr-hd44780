@@ -6,11 +6,11 @@
 ///    them). If performance is a concern, please consider using the buffered frontend.
 
 use super::super::*;
-use super::super::interface::command::*;
-use super::super::interface::Interface;
+use super::super::buses::Bus;
+use super::super::buses::command::*;
 
 pub struct Direct<'a> {
-    interface: &'a mut Interface,
+    bus: &'a mut Bus,
     properties: Properties,
     state: State,
 }
@@ -22,24 +22,23 @@ struct State {
 }
 
 impl<'a> Direct<'a> {
-    /// Creates a new direct HD44780 on given interface.
-    pub fn new(interface: &'a mut Interface, width: usize, height: usize) -> Direct<'a> {
+    /// Creates a new direct HD44780 on given bus.
+    pub fn new(bus: &'a mut Bus, width: usize, height: usize) -> Result<Direct<'a>> {
         Direct::new_ex(
-            interface,
-
+            bus,
             Properties {
                 width,
                 height,
 
                 font: if height == 1 { Font::Font5x10 } else { Font::Font5x8 },
-            }
+            },
         )
     }
 
-    /// Creates a new direct HD44780 on given interface.
-    pub fn new_ex(interface: &'a mut Interface, properties: Properties) -> Direct<'a> {
+    /// Creates a new direct HD44780 on given bus.
+    pub fn new_ex(bus: &'a mut Bus, properties: Properties) -> Result<Direct<'a>> {
         let mut lcd = Direct {
-            interface,
+            bus,
             properties,
 
             state: State {
@@ -49,42 +48,37 @@ impl<'a> Direct<'a> {
             },
         };
 
-        lcd.initialize();
+        lcd.initialize()?;
 
-        lcd
-    }
-
-    /// Prints a single character.
-    pub fn print_char(&mut self, ch: u8) {
-        self.interface.write_data(ch);
+        Ok(lcd)
     }
 
     /// Initializes the screen.
-    fn initialize(&mut self) {
-        // initialize the interface
-        self.interface.initialize();
+    fn initialize(&mut self) -> UnitResult {
+        // initialize the bus
+        self.bus.initialize()?;
 
         // initialize the screen
-        let height = self.get_height();
-        let bus_width = self.interface.get_bus_width();
+        let height = self.height();
+        let bus_width = self.bus.width();
 
-        self.interface.execute(Command::SetFunctions {
+        self.bus.execute(Command::SetFunctions {
             font_5x10: self.properties.font == Font::Font5x10,
             height: height,
             eight_bit_bus: bus_width == 8,
-        });
+        })?;
 
-        self.interface.execute(Command::SetEntryMode {
+        self.bus.execute(Command::SetEntryMode {
             enable_shift: false,
             increment_counter: true,
-        });
+        })?;
 
         self.refresh_display_flags()
     }
 
     /// Issues the "set display flags" command with current LCD's state.
-    fn refresh_display_flags(&mut self) {
-        self.interface.execute(Command::SetDisplayFlags {
+    fn refresh_display_flags(&mut self) -> UnitResult {
+        self.bus.execute(Command::SetDisplayFlags {
             cursor_blinking: self.state.cursor_blinking,
             cursor_visible: self.state.cursor_visible,
             text_visible: self.state.text_visible,
@@ -96,71 +90,73 @@ impl<'a> Hd44780 for Direct<'a> {
     /// Clears the screen.
     /// It's a slow command, re-writing screen with new data should be a preferred way if one is
     /// concerned about the performance (that's precisely what the "buffered" frontend does).
-    fn clear(&mut self) {
-        self.interface.execute(Command::Clear {});
+    fn clear(&mut self) -> UnitResult {
+        self.bus.execute(Command::Clear {})
     }
 
     /// Moves cursor at (0, 0).
     /// It's actually slower than "move_at(0, 0)", because HD44780 takes some time to process this
     /// one.
-    fn home(&mut self) {
-        self.interface.execute(Command::Home {});
+    fn home(&mut self) -> UnitResult {
+        self.bus.execute(Command::Home {})
     }
 
-    fn move_at(&mut self, y: usize, x: usize) {
-        if y as usize >= self.get_height() || x as usize >= self.get_width() {
-            return;
+    fn move_at(&mut self, y: usize, x: usize) -> UnitResult {
+        if y as usize >= self.height() || x as usize >= self.width() {
+            return Err("Tried to move the cursor outside the screen.".into());
         }
 
         let addresses = vec![0x00, 0x40, 0x14, 0x54];
 
-        self.interface.execute(Command::SetDDRamAddress {
+        self.bus.execute(Command::SetDDRamAddress {
             address: (addresses[y] + x) as u8,
-        });
+        })
     }
 
-    fn print_char(&mut self, ch: u8) {
-        self.interface.write_data(ch);
+    fn print_char(&mut self, ch: u8) -> UnitResult {
+        self.bus.write_data(ch)
     }
 
-    fn set_backlight(&mut self, enabled: bool) {
-        self.interface.set_backlight(enabled);
+    fn set_backlight(&mut self, enabled: bool) -> UnitResult {
+        self.bus.set_backlight(enabled)
     }
 
-    fn set_cursor_blinking(&mut self, enabled: bool) {
+    fn set_cursor_blinking(&mut self, enabled: bool) -> UnitResult {
         self.state.cursor_blinking = enabled;
         self.refresh_display_flags()
     }
 
-    fn set_cursor_visible(&mut self, enabled: bool) {
+    fn set_cursor_visible(&mut self, enabled: bool) -> UnitResult {
         self.state.cursor_visible = enabled;
         self.refresh_display_flags()
     }
 
-    fn set_text_visible(&mut self, enabled: bool) {
+    fn set_text_visible(&mut self, enabled: bool) -> UnitResult {
         self.state.text_visible = enabled;
         self.refresh_display_flags()
     }
 
-    fn set_char(&mut self, idx: u8, lines: [u8; 8]) {
+    fn create_char(&mut self, idx: u8, lines: [u8; 8]) -> UnitResult {
         if idx > 7 {
-            return;
+            return Err("Index out of range - character index must be in range <0, 7>".into());
         }
 
-        self.interface.execute(Command::SetCGRamAddress {
+        self.bus.execute(Command::SetCGRamAddress {
             address: idx << 3,
-        });
+        })?;
 
         for line in lines.iter() {
-            self.interface.write_data(*line);
+            self.bus.write_data(*line)?;
         }
+
+        Ok(())
     }
 
-    fn get_height(&mut self) -> usize {
+    fn height(&mut self) -> usize {
         self.properties.height
     }
 
-    fn get_width(&mut self) -> usize {
+    fn width(&mut self) -> usize {
         self.properties.width
     }
 }

@@ -1,4 +1,4 @@
-/// Defines an interface for controlling the HD44780 via an I2C bus.
+/// Defines an interface (a bus) for controlling the HD44780 via the I2C..
 ///
 /// Inspired by:
 ///     <https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library>.
@@ -24,7 +24,7 @@
 use i2cdev::core::I2CDevice;
 use i2cdev::linux::LinuxI2CDevice;
 use std::{path, thread, time};
-use super::super::interface::Interface;
+use super::super::{Bus, Result, UnitResult};
 
 pub struct I2C {
     dev: LinuxI2CDevice,
@@ -32,28 +32,32 @@ pub struct I2C {
 }
 
 impl I2C {
-    /// Constructs a new HD44780 I2C interface.
-    pub fn new<P: AsRef<path::Path>>(i2c_device: P, i2c_address: u16) -> I2C {
-        I2C {
-            dev: LinuxI2CDevice::new(i2c_device, i2c_address).unwrap(),
-            backlight_enabled: true,
-        }
+    /// Constructs a new HD44780 I2C bus.
+    pub fn new<P: AsRef<path::Path>>(i2c_device: P, i2c_address: u16) -> Result<I2C> {
+        Ok(
+            I2C {
+                dev: LinuxI2CDevice::new(i2c_device, i2c_address)?,
+                backlight_enabled: true,
+            }
+        )
     }
 
     /// Sends a single nibble, latching the `Enable` pin.
-    fn write_nibble(&mut self, value: u8) {
+    fn write_nibble(&mut self, value: u8) -> UnitResult {
         // write value, pull up the `enable` pin & wait ~450ns (enable pulse must be >450ns)
-        self.dev.smbus_write_byte(value | 0b00000100).unwrap();
+        self.dev.smbus_write_byte(value | 0b00000100)?;
         thread::sleep(time::Duration::new(0, 450));
 
         // write value again, this time pulling the `Enable` pin down & wait ~37us (commands need 37us to settle)
-        self.dev.smbus_write_byte(value & !0b00000100).unwrap();
+        self.dev.smbus_write_byte(value & !0b00000100)?;
         thread::sleep(time::Duration::new(0, 37 * 1000));
+
+        Ok(())
     }
 }
 
-impl Interface for I2C {
-    fn initialize(&mut self) {
+impl Bus for I2C {
+    fn initialize(&mut self) -> UnitResult {
         let commands = vec![
             // try to put LCD in 8-bit mode three times;
             // required for initialization when LCD has not been previously restarted
@@ -66,29 +70,33 @@ impl Interface for I2C {
         ];
 
         for c in commands {
-            self.write_nibble(c << 4);
+            self.write_nibble(c << 4)?;
             thread::sleep(time::Duration::new(0, 100 * 1000));
         }
+
+        Ok(())
     }
 
-    fn get_bus_width(&mut self) -> usize {
-        4 // I2C is always used in a 4-bit context
-    }
-
-    fn set_backlight(&mut self, enabled: bool) {
+    fn set_backlight(&mut self, enabled: bool) -> UnitResult {
         self.backlight_enabled = enabled;
 
-        // write a byte to update the backlight state
-        self.write_byte(0, false);
+        // write a dummy byte to update the backlight state
+        self.write_byte(0, false)
     }
 
-    fn write_byte(&mut self, value: u8, as_data: bool) {
+    fn write_byte(&mut self, value: u8, as_data: bool) -> UnitResult {
         let mut mask = 0u8;
 
         mask |= 0b00001000 * (self.backlight_enabled as u8);
         mask |= 0b00000001 * (as_data as u8);
 
-        self.write_nibble((value << 0) & 0xF0 | mask);
-        self.write_nibble((value << 4) & 0xF0 | mask);
+        self.write_nibble((value << 0) & 0xF0 | mask)?;
+        self.write_nibble((value << 4) & 0xF0 | mask)?;
+
+        Ok(())
+    }
+
+    fn width(&self) -> usize {
+        4
     }
 }

@@ -7,7 +7,7 @@ pwr-hd44780
 
 A Rust crate allowing to communicate with the **HD44780** LCDs.
 
-# What interfaces are supported?
+# What buses are supported?
 
 - **4-bit GPIO** bus (thanks to the [rppal](https://github.com/golemparts/rppal) library),
 - **I2C** bus (thanks to the [rust-i2cdev](https://github.com/rust-embedded/rust-i2cdev) library).
@@ -22,22 +22,28 @@ extern crate pwr_hd44780;
 use pwr_hd44780::Hd44780;
 
 fn main() {
-    // create the interface instance;
-    // use device at address 0x27 on the first i2c bus
-    let mut lcd_interface = pwr_hd44780::interface::I2C::new(
-        "/dev/i2c-1", 0x27
-    );
+    run().unwrap();
+}
 
-    // create the LCD's frontend;
-    // use interface created before and assume LCD's width x height = 20 x 4
-    let mut lcd = pwr_hd44780::frontend::Direct::new(
-        &mut lcd_interface,
+fn run() -> Result<(), Box<std::error::Error>> {
+    // create the LCD's bus instance;
+    // use device at address 0x27 on the first I2C bus
+    let mut lcd_bus = pwr_hd44780::I2CBus::new(
+        "/dev/i2c-1", 0x27
+    )?;
+
+    // create the direct LCD's instance;
+    // use bus created before and assume LCD's width x height = 20 x 4
+    let mut lcd = pwr_hd44780::DirectLcd::new(
+        &mut lcd_bus,
         20, 4
-    );
+    )?;
 
     // finally - print our text
-    lcd.clear();
-    lcd.print("Hello World! :-)");
+    lcd.clear()?;
+    lcd.print("Hello World! :-)")?;
+
+    Ok(())
 }
 ```
 
