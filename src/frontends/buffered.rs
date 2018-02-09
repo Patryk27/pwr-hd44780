@@ -160,11 +160,11 @@ impl Hd44780 for Buffered {
         self.lcd.create_char(idx, lines)
     }
 
-    fn width(&self) -> usize {
+    fn height(&self) -> usize {
         self.buffer.height
     }
 
-    fn height(&self) -> usize {
+    fn width(&self) -> usize {
         self.buffer.width
     }
 }
