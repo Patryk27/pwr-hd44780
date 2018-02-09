@@ -101,11 +101,11 @@ pub enum Font {
 
 #[derive(Copy, Clone)]
 pub struct Properties {
-    // number of characters per line
-    pub width: usize,
-
     // number of lines
     pub height: usize,
+
+    // number of characters per line
+    pub width: usize,
 
     // LCD's font
     pub font: Font,

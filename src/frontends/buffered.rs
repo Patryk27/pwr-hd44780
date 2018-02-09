@@ -34,14 +34,14 @@ struct Cursor {
 
 struct Buffer {
     lines: Vec<Vec<u8>>,
-    width: usize,
     height: usize,
+    width: usize,
 }
 
 impl Buffered {
     /// Creates a new buffered HD44780 basing on previously existing direct one.
     pub fn new(lcd: Box<Direct>) -> Result<Buffered> {
-        let (width, height) = (lcd.width(), lcd.height());
+        let (height, width) = (lcd.height(), lcd.width());
 
         Ok(
             Buffered {
@@ -54,8 +54,8 @@ impl Buffered {
 
                 buffer: Buffer {
                     lines: vec![vec![' ' as u8; width]; height],
-                    width,
                     height,
+                    width,
                 },
             }
         )
@@ -105,8 +105,10 @@ impl Hd44780 for Buffered {
     }
 
     fn move_at(&mut self, y: usize, x: usize) -> UnitResult {
-        if y as usize >= self.height() || x as usize >= self.width() {
-            return Err("Tried to move the cursor outside the screen.".into());
+        if y >= self.height() || x >= self.width() {
+            return Err(
+                format!("Tried to move the cursor outside the screen (at y={}, x={}).", y, x).into()
+            );
         }
 
         self.cursor.y = y;

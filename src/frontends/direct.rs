@@ -28,8 +28,8 @@ impl Direct {
             bus,
 
             Properties {
-                width,
                 height,
+                width,
 
                 font: if height == 1 { Font::Font5x10 } else { Font::Font5x8 },
             },
@@ -65,7 +65,7 @@ impl Direct {
 
         self.bus.execute(Command::SetFunctions {
             font_5x10: self.properties.font == Font::Font5x10,
-            height: height,
+            height,
             eight_bit_bus: bus_width == 8,
         })?;
 
@@ -103,8 +103,10 @@ impl Hd44780 for Direct {
     }
 
     fn move_at(&mut self, y: usize, x: usize) -> UnitResult {
-        if y as usize >= self.height() || x as usize >= self.width() {
-            return Err("Tried to move the cursor outside the screen.".into());
+        if y >= self.height() || x >= self.width() {
+            return Err(
+                format!("Tried to move the cursor outside the screen (at y={}, x={}).", y, x).into()
+            );
         }
 
         let addresses = vec![0x00, 0x40, 0x14, 0x54];
