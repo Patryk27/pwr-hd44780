@@ -22,7 +22,7 @@ fn main() {
 
 fn run() -> Result<(), Box<std::error::Error>> {
     // create the LCD's bus instance
-    let mut lcd_bus = pwr_hd44780::Gpio4Bus::new(
+    let lcd_bus = pwr_hd44780::Gpio4Bus::new(
         pwr_hd44780::buses::gpio4::Pins {
             data: [26, 6, 5, 16],
             rs: 23,
@@ -33,7 +33,7 @@ fn run() -> Result<(), Box<std::error::Error>> {
     // create the direct LCD's instance;
     // use bus created before and assume LCD's width x height = 20 x 4
     let mut lcd = pwr_hd44780::DirectLcd::new(
-        &mut lcd_bus,
+        Box::new(lcd_bus),
         20, 4,
     )?;
 

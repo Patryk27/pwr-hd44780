@@ -87,10 +87,10 @@ pub trait Hd44780 {
     fn create_char(&mut self, idx: u8, lines: [u8; 8]) -> UnitResult;
 
     /// Returns screen's height (number of lines).
-    fn height(&mut self) -> usize;
+    fn height(&self) -> usize;
 
     /// Returns screen's width (number of characters per line).
-    fn width(&mut self) -> usize;
+    fn width(&self) -> usize;
 }
 
 #[derive(Copy, Clone, PartialEq)]

@@ -21,9 +21,8 @@
 use super::Direct;
 use super::super::{Hd44780, Result, UnitResult};
 
-pub struct Buffered<'a> {
-    lcd: &'a mut Direct<'a>,
-
+pub struct Buffered {
+    lcd: Box<Direct>,
     cursor: Cursor,
     buffer: Buffer,
 }
@@ -39,9 +38,9 @@ struct Buffer {
     height: usize,
 }
 
-impl<'a> Buffered<'a> {
+impl Buffered {
     /// Creates a new buffered HD44780 basing on previously existing direct one.
-    pub fn new(lcd: &'a mut Direct<'a>) -> Result<Buffered<'a>> {
+    pub fn new(lcd: Box<Direct>) -> Result<Buffered> {
         let (width, height) = (lcd.width(), lcd.height());
 
         Ok(
@@ -90,7 +89,7 @@ impl<'a> Buffered<'a> {
     }
 }
 
-impl<'a> Hd44780 for Buffered<'a> {
+impl Hd44780 for Buffered {
     fn clear(&mut self) -> UnitResult {
         for line in &mut self.buffer.lines {
             for ch in line {
@@ -159,11 +158,11 @@ impl<'a> Hd44780 for Buffered<'a> {
         self.lcd.create_char(idx, lines)
     }
 
-    fn width(&mut self) -> usize {
+    fn width(&self) -> usize {
         self.buffer.height
     }
 
-    fn height(&mut self) -> usize {
+    fn height(&self) -> usize {
         self.buffer.width
     }
 }

@@ -9,8 +9,8 @@ use super::super::*;
 use super::super::buses::Bus;
 use super::super::buses::command::*;
 
-pub struct Direct<'a> {
-    bus: &'a mut Bus,
+pub struct Direct {
+    bus: Box<Bus>,
     properties: Properties,
     state: State,
 }
@@ -21,11 +21,12 @@ struct State {
     text_visible: bool,
 }
 
-impl<'a> Direct<'a> {
+impl Direct {
     /// Creates a new direct HD44780 on given bus.
-    pub fn new(bus: &'a mut Bus, width: usize, height: usize) -> Result<Direct<'a>> {
+    pub fn new(bus: Box<Bus>, width: usize, height: usize) -> Result<Direct> {
         Direct::new_ex(
             bus,
+
             Properties {
                 width,
                 height,
@@ -36,7 +37,7 @@ impl<'a> Direct<'a> {
     }
 
     /// Creates a new direct HD44780 on given bus.
-    pub fn new_ex(bus: &'a mut Bus, properties: Properties) -> Result<Direct<'a>> {
+    pub fn new_ex(bus: Box<Bus>, properties: Properties) -> Result<Direct> {
         let mut lcd = Direct {
             bus,
             properties,
@@ -86,7 +87,7 @@ impl<'a> Direct<'a> {
     }
 }
 
-impl<'a> Hd44780 for Direct<'a> {
+impl Hd44780 for Direct {
     /// Clears the screen.
     /// It's a slow command, re-writing screen with new data should be a preferred way if one is
     /// concerned about the performance (that's precisely what the "buffered" frontend does).
@@ -152,11 +153,11 @@ impl<'a> Hd44780 for Direct<'a> {
         Ok(())
     }
 
-    fn height(&mut self) -> usize {
+    fn height(&self) -> usize {
         self.properties.height
     }
 
-    fn width(&mut self) -> usize {
+    fn width(&self) -> usize {
         self.properties.width
     }
 }
