@@ -29,13 +29,41 @@ pub trait Hd44780 {
     fn home(&mut self) -> UnitResult;
 
     /// Moves the cursor at given position.
-    /// When passed an invalid coordinates (eg. beyond the screen), does nothing.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// lcd.move_at(2, 2);
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// When passed an invalid coordinates (eg. beyond the screen), returns an error and does not
+    /// update the cursor position.
     fn move_at(&mut self, y: usize, x: usize) -> UnitResult;
 
-    /// Prints a single ASCII character and moves cursor.
+    /// Prints a single ASCII character and moves cursor by one character.
+    /// Can be used to print custom-made characters (ie. the ones created by `create_char`).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// lcd.print_char(2);
+    /// ```
     fn print_char(&mut self, ch: u8) -> UnitResult;
 
-    /// Prints a string at current cursor's position.
+    /// Prints a string at current cursor's position and moves the cursor.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// lcd.print("Hello World!");
+    /// lcd.print(format!("Hello, {}!", someone));
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// When string overflows current line, the behaviour is undefined.
     fn print<T: Into<String>>(&mut self, str: T) -> UnitResult {
         for ch in str.into().chars() {
             self.print_char(ch as u8)?;
@@ -45,6 +73,17 @@ pub trait Hd44780 {
     }
 
     /// Prints a string at given position.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// lcd.print_at(1, 0, "Hello World!");
+    /// lcd.print_at(2, 0, format!("Hello, {}!", someone));
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// When string overflows current line, the behaviour is undefined.
     fn print_at<T: Into<String>>(&mut self, y: usize, x: usize, str: T) -> UnitResult {
         self.move_at(y, x)?;
         self.print(str)
@@ -54,11 +93,11 @@ pub trait Hd44780 {
     fn set_backlight(&mut self, enabled: bool) -> UnitResult;
 
     /// Enables / disables blinking the cursor.
-    /// Blinking = whole 5x8 / 5x10 character is blinking,
+    /// `Blinking` means that the whole character box is blinking (a whole 5x8 or 5x10 box),
     fn set_cursor_blinking(&mut self, enabled: bool) -> UnitResult;
 
     /// Enables / disables the cursor.
-    /// Visible = only bottom of the character is blinking.
+    /// `Visible` means that only bottom of the character box is blinking (a single line).
     fn set_cursor_visible(&mut self, enabled: bool) -> UnitResult;
 
     /// Shows / hides the text.
