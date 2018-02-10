@@ -60,6 +60,12 @@ pub trait Hd44780 {
     /// ```rust
     /// lcd.print_char_at(1, 0, 2);
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// 1. Returns an error when passed an invalid coordinates.
+    ///
+    /// 2. When given character requires overflowing current line, the behaviour is undefined.
     fn print_char_at(&mut self, y: usize, x: usize, ch: u8) -> UnitResult {
         self.move_at(y, x)?;
         self.print_char(ch)
@@ -76,7 +82,7 @@ pub trait Hd44780 {
     ///
     /// # Errors
     ///
-    /// When string overflows current line, the behaviour is undefined.
+    /// When given character requires overflowing current line, the behaviour is undefined.
     fn print<T: Into<String>>(&mut self, str: T) -> UnitResult {
         for ch in str.into().chars() {
             self.print_char(ch as u8)?;
@@ -96,7 +102,9 @@ pub trait Hd44780 {
     ///
     /// # Errors
     ///
-    /// When string overflows current line, the behaviour is undefined.
+    /// 1. Returns an error when passed an invalid coordinates.
+    ///
+    /// 2. When given string requires overflowing current line, the behaviour is undefined.
     fn print_at<T: Into<String>>(&mut self, y: usize, x: usize, str: T) -> UnitResult {
         self.move_at(y, x)?;
         self.print(str)
