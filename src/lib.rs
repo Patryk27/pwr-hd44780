@@ -44,6 +44,12 @@ pub trait Hd44780 {
         Ok(())
     }
 
+    /// Prints a string at given position.
+    fn print_at<T: Into<String>>(&mut self, y: usize, x: usize, str: T) -> UnitResult {
+        self.move_at(y, x)?;
+        self.print(str)
+    }
+
     /// Enables / disables the backlight.
     fn set_backlight(&mut self, enabled: bool) -> UnitResult;
 
