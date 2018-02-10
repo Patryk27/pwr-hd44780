@@ -42,7 +42,7 @@ pub trait Hd44780 {
     /// update the cursor position.
     fn move_at(&mut self, y: usize, x: usize) -> UnitResult;
 
-    /// Prints a single ASCII character and moves cursor by one character.
+    /// Prints a single ASCII character at current cursor's position and moves the cursor.
     /// Can be used to print custom-made characters (ie. the ones created by `create_char`).
     ///
     /// # Example
@@ -51,6 +51,19 @@ pub trait Hd44780 {
     /// lcd.print_char(2);
     /// ```
     fn print_char(&mut self, ch: u8) -> UnitResult;
+
+    /// Prints a single ASCII character at given position and moves the cursor.
+    /// Can be used to print custom-made characters (ie. the ones created by `create_char`).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// lcd.print_char_at(1, 0, 2);
+    /// ```
+    fn print_char_at(&mut self, y: usize, x: usize, ch: u8) -> UnitResult {
+        self.move_at(y, x)?;
+        self.print_char(ch)
+    }
 
     /// Prints a string at current cursor's position and moves the cursor.
     ///
