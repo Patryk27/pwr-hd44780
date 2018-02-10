@@ -129,6 +129,10 @@ pub trait Hd44780 {
     ///
     /// lcd.print_char(1);
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when passed an invalid index.
     fn create_char(&mut self, idx: u8, lines: [u8; 8]) -> UnitResult;
 
     /// Returns screen's height (number of lines).
