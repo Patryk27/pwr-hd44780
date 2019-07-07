@@ -5,27 +5,20 @@ pwr-hd44780
 
 [Documentation](https://docs.rs/pwr-hd44780)
 
-A Rust crate allowing to communicate with the **HD44780** LCDs.
+Hand-made Rust driver for the brilliant **HD44780** LCDs.
 
-# What buses are supported?
+# Supported buses
 
-- **4-bit GPIO** bus (thanks to the [rppal](https://github.com/golemparts/rppal) library),
-- **I2C** bus (thanks to the [rust-i2cdev](https://github.com/rust-embedded/rust-i2cdev) library).
+- **4-bit GPIO** (thanks to the [rppal](https://github.com/golemparts/rppal) library),
+- **I2C** (thanks to the [rust-i2cdev](https://github.com/rust-embedded/rust-i2cdev) library).
 
-# Would you mind showing me some code?
-
-Sure, pal:
+# Example code
 
 ```rust
-extern crate pwr_hd44780;
-
 use pwr_hd44780::Hd44780;
+use std::error::Error;
 
-fn main() {
-    run().unwrap();
-}
-
-fn run() -> Result<(), Box<std::error::Error>> {
+fn main() -> Result<(), Box<Error>> {
     // create the LCD's bus instance;
     // use device at address 0x27 on the first I2C bus
     let lcd_bus = pwr_hd44780::I2CBus::new(

@@ -13,6 +13,7 @@
 
 use rppal::gpio::{Gpio, Level, Mode};
 use std::{thread, time};
+
 use super::super::{Bus, Result, UnitResult};
 
 pub struct Gpio4 {

@@ -1,59 +1,86 @@
-/// A convenient, high-level driver for the HD44780 display.
-/// Supports both the `I2C` and `GPIO` buses + has a buffered implementation.
+/// Hand-made Rust driver for the brilliant HD44780 LCDs.
 ///
 /// # License
 ///
-/// Copyright (c) 2018, Patryk Wychowaniec <wychowaniec.patryk@gmail.com>.
+/// Copyright (c) 2018-2019, Patryk Wychowaniec <wychowaniec.patryk@gmail.com>.
 /// Licensed under the MIT license.
-
+#[feature(i2c)]
 extern crate i2cdev;
+#[feature(gpio)]
 extern crate rppal;
 
-pub(crate) use buses::Bus;
-pub use buses::Gpio4 as Gpio4Bus;
-pub use buses::I2C as I2CBus;
-pub use frontends::Buffered as BufferedLcd;
-pub use frontends::Direct as DirectLcd;
+pub use self::{
+    bus::*,
+    driver::*,
+    error::*,
+    font::*,
+    properties::*,
+    result::*,
+};
 
-pub mod buses;
-pub mod frontends;
+mod bus;
+mod driver;
+mod error;
+mod font;
+mod properties;
+mod result;
 
-pub type Result<T> = ::std::result::Result<T, Box<std::error::Error>>;
-pub type UnitResult = Result<()>;
-
+// @todo "/// - Returns an error if printing this character would overflow current line."
 pub trait Hd44780 {
-    /// Clears the screen and moves cursor at (0, 0).
-    fn clear(&mut self) -> UnitResult;
+    /// Clears screen's contents and moves cursor at `(0, 0)` (top-left corner).
+    ///
+    /// # Errors
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn clear(&mut self) -> Result<()>;
 
-    /// Moves the cursor at (0, 0).
-    fn home(&mut self) -> UnitResult;
+    /// Moves cursor at `(0, 0)` (top-left corner).
+    ///
+    /// # Errors
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn home(&mut self) -> Result<()>;
 
-    /// Moves the cursor at given position.
+    /// Moves the cursor at given (zero-based) position.
     ///
     /// # Example
     ///
     /// ```rust
-    /// lcd.move_at(2, 2);
+    /// lcd.move_at(2, 4); // Moves cursor at 5th character in the 3rd line
     /// ```
     ///
     /// # Errors
     ///
-    /// When passed an invalid coordinates (eg. beyond the screen), returns an error and does not
-    /// update the cursor position.
-    fn move_at(&mut self, y: usize, x: usize) -> UnitResult;
+    /// - When given invalid coordinates (beyond the screen), returns an error and does not touch
+    ///   the cursor at all.
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn move_at(&mut self, y: usize, x: usize) -> Result<()>;
 
     /// Prints a single ASCII character at current cursor's position and moves the cursor.
-    /// Can be used to print custom-made characters (ie. the ones created by `create_char`).
+    /// Can be used to print custom-made characters (the ones created with `create_char()`).
     ///
     /// # Example
     ///
     /// ```rust
     /// lcd.print_char(2);
     /// ```
-    fn print_char(&mut self, ch: u8) -> UnitResult;
+    ///
+    /// # Safety
+    ///
+    /// - If given invalid character code, prints junk on the screen.
+    ///
+    /// - If printing this character would overflow current line, behavior is unspecified (up to the
+    ///   LCD itself).
+    ///
+    /// # Errors
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn print_char(&mut self, ch: u8) -> Result<()>;
 
-    /// Prints a single ASCII character at given position and moves the cursor.
-    /// Can be used to print custom-made characters (ie. the ones created by `create_char`).
+    /// Moves cursor at given position and prints given ASCII character there.
+    /// Can be used to print custom-made characters (ie. the ones created by `create_char()`).
+    /// Does not restore cursor to the original position.
     ///
     /// # Example
     ///
@@ -61,17 +88,25 @@ pub trait Hd44780 {
     /// lcd.print_char_at(1, 0, 2);
     /// ```
     ///
+    /// # Safety
+    ///
+    /// - If given invalid character code, prints junk on the screen.
+    ///
+    /// - If printing this character would overflow current line, behavior is unspecified (up to the
+    ///   LCD itself).
+    ///
     /// # Errors
     ///
-    /// 1. Returns an error when passed an invalid coordinates.
+    /// - When given invalid coordinates (beyond the screen), returns an error and does not touch
+    ///   or print anything at all.
     ///
-    /// 2. When given character requires overflowing current line, the behaviour is undefined.
-    fn print_char_at(&mut self, y: usize, x: usize, ch: u8) -> UnitResult {
+    /// - Returns an error if communication with the LCD fails.
+    fn print_char_at(&mut self, y: usize, x: usize, ch: u8) -> Result<()> {
         self.move_at(y, x)?;
         self.print_char(ch)
     }
 
-    /// Prints a string at current cursor's position and moves the cursor.
+    /// Prints an ASCII text at current cursor's position and moves the cursor.
     ///
     /// # Example
     ///
@@ -80,18 +115,33 @@ pub trait Hd44780 {
     /// lcd.print(format!("Hello, {}!", someone));
     /// ```
     ///
+    /// # Safety
+    ///
+    /// - If printing this text would overflow current line, behavior is unspecified (up to the LCD
+    ///   itself).
+    ///
     /// # Errors
     ///
-    /// When given character requires overflowing current line, the behaviour is undefined.
-    fn print<T: Into<String>>(&mut self, str: T) -> UnitResult {
-        for ch in str.into().chars() {
+    /// - Returns an error if given string contains at least one non-ASCII character.
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn print(&mut self, text: &str) -> Result<()> {
+        // Extract characters from string
+        let chars: Vec<_> = text.chars().collect();
+
+        // Ensure all characters are ASCII
+        // @todo
+
+        // Print them
+        for ch in chars {
             self.print_char(ch as u8)?;
         }
 
         Ok(())
     }
 
-    /// Prints a string at given position.
+    /// Moves cursor at given position and prints given ASCII text there.
+    /// Does not restore cursor to the original position.
     ///
     /// # Example
     ///
@@ -100,39 +150,83 @@ pub trait Hd44780 {
     /// lcd.print_at(2, 0, format!("Hello, {}!", someone));
     /// ```
     ///
+    /// # Safety
+    ///
+    /// - If printing this text would overflow current line, behavior is unspecified (up to the LCD
+    ///   itself).
+    ///
     /// # Errors
     ///
-    /// 1. Returns an error when passed an invalid coordinates.
+    /// - Returns an error if given string contains at least one non-ASCII character.
     ///
-    /// 2. When given string requires overflowing current line, the behaviour is undefined.
-    fn print_at<T: Into<String>>(&mut self, y: usize, x: usize, str: T) -> UnitResult {
+    /// - Returns an error if communication with the LCD fails.
+    fn print_at(&mut self, y: usize, x: usize, text: &str) -> Result<()> {
         self.move_at(y, x)?;
-        self.print(str)
+        self.print(text)
     }
 
-    /// Enables / disables the backlight.
-    fn set_backlight(&mut self, enabled: bool) -> UnitResult;
-
-    /// Enables / disables blinking the cursor.
-    /// `Blinking` means that the whole character box is blinking (a whole 5x8 or 5x10 box),
-    fn set_cursor_blinking(&mut self, enabled: bool) -> UnitResult;
-
-    /// Enables / disables the cursor.
-    /// `Visible` means that only bottom of the character box is blinking (a single line).
-    fn set_cursor_visible(&mut self, enabled: bool) -> UnitResult;
-
-    /// Shows / hides the text.
-    fn set_text_visible(&mut self, enabled: bool) -> UnitResult;
-
-    /// Creates a custom character from given bitmap.
+    /// Toggles LCD's backlight.
     ///
-    /// Each array item in given bitmap represents a single line, of which only the last 5 bits are
-    /// important - rest is ignored.
+    /// # Safety
     ///
-    /// `idx` must be from range `<0, 7>` (that is: only 8 custom characters are possible, that's a
-    /// limit imposed by the designers of the HD44780).
+    /// - If LCD does not support changing the backlight, nothing happens (this command is a no-op).
     ///
-    /// When passed an invalid `idx`, does nothing.
+    /// # Errors
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn enable_backlight(&mut self, enabled: bool) -> Result<()>;
+
+    /// Toggles cursor box's blinking mode.
+    ///
+    /// When enabled, the entire character box (5x8 / 5x10 pixels) at current cursor's position will
+    /// be blinking with constant speed.
+    ///
+    /// There's no way to change the blinking speed.
+    ///
+    /// # Safety
+    ///
+    /// - If LCD does not support changing the blinking mode, nothing happens (this command is a
+    ///   no-op).
+    ///
+    /// # Errors
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn enable_cursor_box_blinking(&mut self, enabled: bool) -> Result<()>;
+
+    /// Toggles cursor line's blinking mode.
+    ///
+    /// When enabled, bottom of the character box at current cursor's position will be blinking with
+    /// constant speed.
+    ///
+    /// There's no way to change the blinking speed.
+    ///
+    /// # Safety
+    ///
+    /// - If LCD does not support changing the blinking mode, nothing happens (this command is a
+    ///   no-op).
+    ///
+    /// # Errors
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn enable_cursor_line_blinking(&mut self, enabled: bool) -> Result<()>;
+
+    /// Toggles text visibility.
+    ///
+    /// When disabled, the entire screen will stop displaying text at once.
+    ///
+    /// # Safety
+    ///
+    /// - If LCD does not support changing the text visibility, nothing happens (this command is a
+    ///   no-op).
+    ///
+    /// # Errors
+    ///
+    /// - Returns an error if communication with the LCD fails.
+    fn enable_text(&mut self, enabled: bool) -> Result<()>;
+
+    /// Creates a custom 5x8/5x10-pixel character from given bitmap.
+    ///
+    /// @todo
     ///
     /// # Example
     ///
@@ -150,33 +244,14 @@ pub trait Hd44780 {
     ///
     /// lcd.print_char(1);
     /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when passed an invalid index.
-    fn create_char(&mut self, idx: u8, lines: [u8; 8]) -> UnitResult;
+    fn create_char(&mut self, idx: u8, lines: [u8; 8]) -> Result<()>;
 
-    /// Returns screen's height (number of lines).
-    fn height(&self) -> usize;
-
-    /// Returns screen's width (number of characters per line).
+    /// Returns number of characters (per line) this screen can display.
     fn width(&self) -> usize;
+
+    /// Returns number of lines this screen can display.
+    fn height(&self) -> usize;
 }
 
-#[derive(Copy, Clone, PartialEq)]
-pub enum Font {
-    Font5x8,
-    Font5x10,
-}
 
-#[derive(Copy, Clone)]
-pub struct Properties {
-    // number of lines
-    pub height: usize,
 
-    // number of characters per line
-    pub width: usize,
-
-    // LCD's font
-    pub font: Font,
-}

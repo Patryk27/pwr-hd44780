@@ -11,7 +11,7 @@ use super::super::buses::command::*;
 
 pub struct Direct {
     bus: Box<Bus>,
-    properties: Properties,
+    properties: LcdProperties,
     state: State,
 }
 
@@ -26,18 +26,17 @@ impl Direct {
     pub fn new(bus: Box<Bus>, width: usize, height: usize) -> Result<Direct> {
         Direct::new_ex(
             bus,
-
-            Properties {
+            LcdProperties {
                 height,
                 width,
 
-                font: if height == 1 { Font::Font5x10 } else { Font::Font5x8 },
+                font: if height == 1 { LcdFont::Font5x10 } else { LcdFont::Font5x8 },
             },
         )
     }
 
     /// Creates a new direct HD44780 on given bus.
-    pub fn new_ex(bus: Box<Bus>, properties: Properties) -> Result<Direct> {
+    pub fn new_ex(bus: Box<Bus>, properties: LcdProperties) -> Result<Direct> {
         let mut lcd = Direct {
             bus,
             properties,
@@ -64,7 +63,7 @@ impl Direct {
         let bus_width = self.bus.width();
 
         self.bus.execute(Command::SetFunctions {
-            font_5x10: self.properties.font == Font::Font5x10,
+            font_5x10: self.properties.font == LcdFont::Font5x10,
             height,
             eight_bit_bus: bus_width == 8,
         })?;
@@ -120,21 +119,21 @@ impl Hd44780 for Direct {
         self.bus.write_data(ch)
     }
 
-    fn set_backlight(&mut self, enabled: bool) -> UnitResult {
+    fn enable_backlight(&mut self, enabled: bool) -> UnitResult {
         self.bus.set_backlight(enabled)
     }
 
-    fn set_cursor_blinking(&mut self, enabled: bool) -> UnitResult {
+    fn enable_cursor_box_blinking(&mut self, enabled: bool) -> UnitResult {
         self.state.cursor_blinking = enabled;
         self.refresh_display_flags()
     }
 
-    fn set_cursor_visible(&mut self, enabled: bool) -> UnitResult {
+    fn enable_cursor_line_blinking(&mut self, enabled: bool) -> UnitResult {
         self.state.cursor_visible = enabled;
         self.refresh_display_flags()
     }
 
-    fn set_text_visible(&mut self, enabled: bool) -> UnitResult {
+    fn enable_text(&mut self, enabled: bool) -> UnitResult {
         self.state.text_visible = enabled;
         self.refresh_display_flags()
     }

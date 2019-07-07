@@ -1,8 +1,10 @@
+use std::{thread, time};
+
+use super::UnitResult;
+
 use self::command::*;
 pub use self::gpio4::Gpio4;
 pub use self::i2c::I2C;
-use std::{thread, time};
-use super::UnitResult;
 
 pub(crate) mod command;
 

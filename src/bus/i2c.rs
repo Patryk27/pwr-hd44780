@@ -24,6 +24,7 @@
 use i2cdev::core::I2CDevice;
 use i2cdev::linux::LinuxI2CDevice;
 use std::{path, thread, time};
+
 use super::super::{Bus, Result, UnitResult};
 
 pub struct I2C {

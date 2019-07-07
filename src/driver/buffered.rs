@@ -140,20 +140,20 @@ impl Hd44780 for Buffered {
         Ok(())
     }
 
-    fn set_backlight(&mut self, enabled: bool) -> UnitResult {
-        self.lcd.set_backlight(enabled)
+    fn enable_backlight(&mut self, enabled: bool) -> UnitResult {
+        self.lcd.enable_backlight(enabled)
     }
 
-    fn set_cursor_blinking(&mut self, enabled: bool) -> UnitResult {
-        self.lcd.set_cursor_blinking(enabled)
+    fn enable_cursor_box_blinking(&mut self, enabled: bool) -> UnitResult {
+        self.lcd.enable_cursor_box_blinking(enabled)
     }
 
-    fn set_cursor_visible(&mut self, enabled: bool) -> UnitResult {
-        self.lcd.set_cursor_visible(enabled)
+    fn enable_cursor_line_blinking(&mut self, enabled: bool) -> UnitResult {
+        self.lcd.enable_cursor_line_blinking(enabled)
     }
 
-    fn set_text_visible(&mut self, enabled: bool) -> UnitResult {
-        self.lcd.set_text_visible(enabled)
+    fn enable_text(&mut self, enabled: bool) -> UnitResult {
+        self.lcd.enable_text(enabled)
     }
 
     fn create_char(&mut self, idx: u8, lines: [u8; 8]) -> UnitResult {
