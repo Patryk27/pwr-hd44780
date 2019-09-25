@@ -1,11 +1,10 @@
-/// Defines an interface (a bus) for controlling the HD44780 via the I2C..
+/// Defines a bus for controlling the HD44780 via I2C.
 ///
 /// Inspired by:
 ///     <https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library>.
 ///
 /// Thanks to:
-///     <https://github.com/rust-embedded/rust-i2cdev> for providing a nice crate allowing to
-///     control the I2C.
+///     <https://github.com/rust-embedded/rust-i2cdev> for providing a great crate for managing I2C.
 ///
 /// # A word on the protocol itself
 ///
@@ -78,7 +77,7 @@ impl Bus for I2C {
         Ok(())
     }
 
-    fn set_backlight(&mut self, enabled: bool) -> UnitResult {
+    fn enable_backlight(&mut self, enabled: bool) -> UnitResult {
         self.backlight_enabled = enabled;
 
         // write a dummy byte to update the backlight state

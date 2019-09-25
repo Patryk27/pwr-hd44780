@@ -1,10 +1,22 @@
-pub enum Error {
-    CommunicationFailed,
+use rppal::i2c::Error as I2cError;
 
-    InvalidCoordinates {
-        current_yx: (usize, usize),
-        max_yx: (usize, usize),
+use crate::Point;
+
+pub enum Error {
+    CommunicationError(Box<dyn std::error::Error>),
+
+    CharOutOfBounds {
+        char: u8,
     },
 
-    InvalidString,
+    CursorOutOfBounds {
+        cursor: Point,
+        screen_dimensions: Point,
+    },
+}
+
+impl From<I2cError> for Error {
+    fn from(err: I2cError) -> Self {
+        Error::CommunicationError(Box::new(err))
+    }
 }

@@ -1,28 +1,17 @@
-/// Provides a buffered access to the HD44780.
+/// Provides a buffered access to the HD44780, which helps to overcome flickering in some cases.
 ///
-/// Can be used like a regular HD44780, except that one must manually call the `render` method at
-/// some point to actually refresh the screen.
-///
-/// # Additional methods
-///
-/// This frontend provides some new methods, which are not present in the direct one - namely:
-/// - `render`,
-/// - `println`.
+/// It can be used just a regular HD44780 driver, with one exception: at some point you must
+/// manually call the `render()` method - otherwise the screen won't refresh.
 ///
 /// # Caveats
 ///
-/// 1. Although rendering the text requires a call to the `render` method, modifying the LCD's state
-///    does not. Thus calling eg. the `set_backlight` method results in an instant change. Same
-///    applies to `create_char` and a few other ones.
-///
-/// 2. `set_cursor_blinking` & `set_cursor_visible` do not play well with buffering and thus their
-///    usage is discouraged.
+/// Although rendering the text requires a call to the `render()` method, modifying the LCD's state
+/// does not. Calling the `enable_backlight()` method, for instance, results in an instant change.
 
-use super::Direct;
-use super::super::{Hd44780, Result, UnitResult};
+use crate::{Lcd, Result};
 
-pub struct Buffered {
-    lcd: Box<Direct>,
+pub struct BufferedLcd {
+    lcd: Box<Lcd>,
     cursor: Cursor,
     buffer: Buffer,
 }
@@ -38,13 +27,13 @@ struct Buffer {
     width: usize,
 }
 
-impl Buffered {
-    /// Creates a new buffered HD44780 basing on previously existing direct one.
-    pub fn new(lcd: Box<Direct>) -> Result<Buffered> {
+impl BufferedLcd {
+    /// Creates a new instance of `BufferedLcd`.
+    pub fn new(lcd: Box<Lcd>) -> Result<Self> {
         let (height, width) = (lcd.height(), lcd.width());
 
         Ok(
-            Buffered {
+            BufferedLcd {
                 lcd,
 
                 cursor: Cursor {
@@ -61,8 +50,13 @@ impl Buffered {
         )
     }
 
-    /// Refreshes the screen.
-    pub fn render(&mut self) -> UnitResult {
+    /// Creates a new instance of `BufferedLcd`.
+    pub fn new_impl(lcd: impl Lcd) -> Result<Self> {
+        Self::new(Box::new(lcd))
+    }
+
+    /// Renders contents of the buffer onto the screen.
+    pub fn render(&mut self) -> Result<()> {
         let mut y = 0;
 
         for line in &self.buffer.lines {
@@ -79,7 +73,7 @@ impl Buffered {
     }
 
     /// Prints text at current cursor's position and moves to the next line.
-    pub fn println<T: Into<String>>(&mut self, str: T) -> UnitResult {
+    pub fn println<T: Into<String>>(&mut self, str: T) -> Result<()> {
         self.print(str)?;
 
         self.cursor.x = 0;
@@ -89,8 +83,8 @@ impl Buffered {
     }
 }
 
-impl Hd44780 for Buffered {
-    fn clear(&mut self) -> UnitResult {
+impl Lcd for BufferedLcd {
+    fn clear(&mut self) -> Result<()> {
         for line in &mut self.buffer.lines {
             for ch in line {
                 *ch = ' ' as u8;
@@ -100,16 +94,12 @@ impl Hd44780 for Buffered {
         self.move_at(0, 0)
     }
 
-    fn home(&mut self) -> UnitResult {
+    fn home(&mut self) -> Result<()> {
         self.move_at(0, 0)
     }
 
-    fn move_at(&mut self, y: usize, x: usize) -> UnitResult {
-        if y >= self.height() || x >= self.width() {
-            return Err(
-                format!("Tried to move the cursor outside the screen (at y={}, x={}).", y, x).into()
-            );
-        }
+    fn move_at(&mut self, y: usize, x: usize) -> Result<()> {
+        self.validate_coords(y, x)?;
 
         self.cursor.y = y;
         self.cursor.x = x;
@@ -118,14 +108,12 @@ impl Hd44780 for Buffered {
     }
 
     fn print_char(&mut self, ch: u8) -> UnitResult {
-        if self.cursor.y >= self.buffer.height || self.cursor.x >= self.buffer.width {
-            return Err("Tried to print a character outside the screen.".into());
-        }
+        self.validate_coords(self.cursor.y, self.cursor.x)?;
 
-        // print the character
+        // Print character
         self.buffer.lines[self.cursor.y][self.cursor.x] = ch;
 
-        // move the cursor
+        // Move cursor
         self.cursor.x += 1;
 
         if self.cursor.x >= self.buffer.width {
@@ -156,15 +144,15 @@ impl Hd44780 for Buffered {
         self.lcd.enable_text(enabled)
     }
 
-    fn create_char(&mut self, idx: u8, lines: [u8; 8]) -> UnitResult {
-        self.lcd.create_char(idx, lines)
-    }
-
-    fn height(&self) -> usize {
-        self.buffer.height
+    fn create_char(&mut self, idx: u8, bitmap: [u8; 8]) -> UnitResult {
+        self.lcd.create_char(idx, bitmap)
     }
 
     fn width(&self) -> usize {
         self.buffer.width
+    }
+
+    fn height(&self) -> usize {
+        self.buffer.height
     }
 }

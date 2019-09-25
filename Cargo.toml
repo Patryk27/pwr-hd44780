@@ -1,15 +1,11 @@
 [package]
 name = "pwr-hd44780"
-version = "0.1.3"
-
+version = "0.2.0"
 authors = ["Patryk Wychowaniec <wychowaniec.patryk@gmail.com>"]
 license = "MIT"
-
 description = "A driver for the HD44780 LCD. Has support for both I2C and GPIO buses + implements a high-speed buffered version."
-
 repository = "https://github.com/Patryk27/pwr-hd44780"
-maintenance = { status = "experimental" }
+edition = "2018"
 
 [dependencies]
-i2cdev = "0.3"
-rppal = "0.2"
+rppal = "0.11.3"
